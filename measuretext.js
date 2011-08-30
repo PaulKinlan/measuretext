@@ -39,117 +39,35 @@ THE SOFTWARE.
 
 (function() {
 
-  var canvas;
-
+  var container;
+  
   window.measureText = function(text, font, options) {
+    if(!!document.body == false) return;
 
-    var DEBUG = (options && options.debug) ?
-      function(lifesaver) { lifesaver(); } : function() {};
-    var boundingBoxRatio = options && options.boundingBoxRatio || 3;
+    container = container || document.createElement("span");
 
-    canvas = canvas || document.createElement("canvas"),
-        context = canvas.getContext("2d");
-    DEBUG(function() {
-      canvas.className = "measureTextSpecimen";
-      document.body.appendChild(canvas);
-    });
+    container.style.fontFamily = font;
+    container.style.margin = 0;
+    container.style.position = "absolute";
+    container.style.opacity = 0;
+    container.style.padding = 0;
+    container.style.fontFamily = font;
+    container.style.textBaseline = "top"
+    container.style.textAlign = "left";
+    var textNode = document.createTextNode(text);
+    container.appendChild(textNode);
+    document.body.appendChild(container);
+    
+    var rect = container.getBoundingClientRect();
+    container.removeChild(textNode); 
+    document.body.removeChild(container);
 
-    context.font = font;
-    var estimatedWidth = originalMeasureText ?
-          originalMeasureText.call(context,text).width :
-          estimateFontPixels(font)*text.length,
-        estimatedEmHeight = estimateFontPixels(font);
-
-    var canvasWidth = boundingBoxRatio * estimatedWidth,
-        canvasHeight = boundingBoxRatio * estimatedEmHeight,
-        emSquareOffsetRatio = ((boundingBoxRatio-1)/2)/boundingBoxRatio,
-        emSquareLeft = emSquareOffsetRatio * canvasWidth,
-        emSquareTop = emSquareOffsetRatio * canvasHeight;
-
-    canvas.width = canvasWidth,
-    canvas.height = canvasHeight,
-    DEBUG(function() {
-      console.log("setting", canvasWidth, canvasHeight);
-      canvas.style.width = canvasWidth;
-      canvas.style.height = canvasHeight;
-    });
-
-    context.font = font;
-    context.textBaseline = "top"
-    context.textAlign = "left";
-    context.fillStyle = "#666";
-    context.fillText(text, emSquareLeft, emSquareTop);
-
-    if (!text.length) return {
-      width: estimatedWidth,
-      height: estimatedEmHeight,
-      topGap: estimatedEmHeight/2
+    metrics = {
+      "height": rect.height,
+      "width": rect.width
     };
 
-    var imageData = 
-      context.getImageData(0,0,canvas.width,canvas.height).data;
-    var actualTop, actualBottom, actualLeft, actualRight, lefty,
-        lefties = [], righties = [];
-
-    for (var y=0; y<canvasHeight; y++) {
-      lefty = null, righty = null;
-      for (var x=0; x<canvasWidth; x++) {
-        for (var component=0; component<3; component++) {
-          if (imageData[4*y*canvas.width + 4*x + component] > 0) {
-            if (!lefty) lefty = x;
-            righty = x;
-            if (!actualTop) actualTop = y;
-            actualBottom = y;
-          }
-        }
-      }
-      if (lefty) lefties.push(lefty)
-      if (righty) righties.push(righty)
-    }
-
-    var actualLeft = Math.min.apply(null, lefties)
-    var actualRight = Math.max.apply(null, righties)
-    var metrics = {
-      // width: estimatedWidth,
-      width: actualRight - actualLeft,
-      height: actualBottom - actualTop,
-      leftOffset: Math.min.apply(null, lefties) - emSquareLeft,
-      topOffset: actualTop - emSquareTop,
-    };
-
-    // Now that we've scanned it, draw a 1em bounding rectangle for debug
-    DEBUG(function() {
-      context.fillStyle = options.emboxStyle || "rgba(80%,80%,100%,0.1)";
-      context.fillRect(actualLeft, actualTop, metrics.width, metrics.height);
-      console.log(font, estimateFontPixels(font), metrics,
-        "est-wid", estimatedWidth, "est-height", estimatedEmHeight,
-        "em-ratio", emSquareOffsetRatio,
-        "can-wid", canvasWidth, "can-height", canvasHeight,
-        "em-top", emSquareTop, "em-left", emSquareLeft,
-        "bottom", actualBottom, "top", actualTop,
-        "left", actualLeft, "right", actualRight);
-    });
-
     return metrics;
-
   }
-
-  function estimateFontPixels(font) {
-    var matches;
-    if (matches = font.match(/([0-9]+)px/)) return parseInt(matches[1]);
-    if (matches = font.match(/ ([0-9]+) /)) return parseInt(matches[1]);
-    if (matches = font.match(/([0-9]+)pt/)) return 1.25*matches[1];
-    return 12; /* i give up */
-  }
-
-  var originalMeasureText = CanvasRenderingContext2D.prototype.measureText;
-  CanvasRenderingContext2D.prototype.measureText=function(text) {
-    var metrics = originalMeasureText.call(this,text);
-    var extraMetrics = window.measureText(text, this.font);
-    for (key in extraMetrics) {
-      metrics[key] = extraMetrics[key];
-    }
-    return metrics;
-  };
 
 })();
