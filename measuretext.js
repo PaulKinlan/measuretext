@@ -1,18 +1,18 @@
 /*
-measuretext.js - any queries you'll find my details at
+This is based off measureText.js, by Micheal Mahemoff.  However, this library
+doesn't use canvas so, other than the name there is not much similar.
+   
+For any queries on the original measureText  you'll find his details at
 http://contact.mahemoff.com.
 
 ::::: IMPLEMENTATION :::::
 
-It would be instructive to peruse http://b.wearehugh.com/dih5/baselines.png
-from the canvas chapter of Mark Pilgrim's Dive Into HTML5:
-http://diveintohtml5.org/canvas.html
+The library creates an element, adds it too the DOM (hidden) and adds the
+desired text.  It then gets the client bounding rect, removes the added element
+and returns the width and height.
 
-The library relies on canvas.measureText to accurately determine width. For
-height, it takes a stab at em box height by inspecting the current font,
-then adds some margin for error to form an "upper bound" box. To reduce
-this large "upper bound" box to an actual bounding box, every pixel in it
-is scanned to determine the actual bounding dimensions.
+Lots of things still to consider such as individual character heights, multiple
+lines and white-space preservation.
 
 ::::: LICENSE :::::
 
@@ -40,8 +40,14 @@ THE SOFTWARE.
 (function() {
 
   var container;
+
+  var replaceSpaces = function(text) {
+    var newText = text.replace(/ /gi, "\u00a0");
+    return newText;
+  };
   
   window.measureText = function(text, font, options) {
+    options = options || { preserveSpaces: false };
     if(!!document.body == false) return;
 
     container = container || document.createElement("span");
@@ -54,6 +60,10 @@ THE SOFTWARE.
     container.style.fontFamily = font;
     container.style.textBaseline = "top"
     container.style.textAlign = "left";
+
+    if(options.preserveSpaces) 
+      text = replaceSpaces(text);
+
     var textNode = document.createTextNode(text);
     container.appendChild(textNode);
     document.body.appendChild(container);

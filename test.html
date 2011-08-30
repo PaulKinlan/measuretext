@@ -11,10 +11,10 @@
     console.log(measureText("Test", "Consolas"));
   </script>
   <script>
-    console.log(measureText("Test", "Arial"));
-  </script>
-  <script>
-    console.log(measureText("Test", "Arial"));
+    console.log(measureText("Testing Spaces", "Arial"));
+    console.log(measureText("Testing  Spaces", "Arial"));
+    console.log(measureText("Testing   Spaces", "Arial"));
+    console.log(measureText("Testing   Spaces", "Arial", {preserveSpaces: true}));
   </script>
 </html>
 
